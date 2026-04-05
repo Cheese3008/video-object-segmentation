@@ -1,4 +1,4 @@
-# Video Object Segmentation Evaluation: CUTIE vs XMem
+# Evaluating the challenges in object segmentation in the video: CUTIE vs. XMem
 
 <p align="center">
   Comparative evaluation framework for Video Object Segmentation using <b>CUTIE</b> and <b>XMem</b>
@@ -21,7 +21,6 @@ The project includes:
 - inference result management
 - multiple evaluation metrics
 - qualitative visualization with overlay videos
-- output assets for reports, presentations, and scientific writing
 
 ---
 
@@ -262,22 +261,12 @@ Several representative sequences used in evaluation:
 
 ---
 
-## Notes
-
-- Input RGB frames in `JPEGImages/` are stored as **`.jpg`**
-- Prediction masks in `results_cutie/` and `results_xmem/` are stored as **`.png`**
-- The number of frames in input and output folders should be checked before evaluation
-- Ensure the folder structure is correct before running any evaluation script
-
----
-
 ## Future Work
 
 Possible extensions for this project:
-- evaluate more sequences for stronger statistical reliability
-- add segmentation metrics such as **IoU**, **Dice**, and **Boundary F-score**
-- automate figure export directly into the `assets/` directory
-- integrate Jupyter notebooks for more detailed analysis and visualization
+- Investigating the replacement of the Transformer architecture in CUTIE with Mamba (State Space Model - SSM) to evaluate its potential for improving performance and reducing computational cost
+- Optimizing the model and processing pipeline to achieve real-time inference, thereby enhancing its practicality for real-world applications
+
 
 
 
