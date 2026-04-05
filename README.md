@@ -279,11 +279,5 @@ Possible extensions for this project:
 - automate figure export directly into the `assets/` directory
 - integrate Jupyter notebooks for more detailed analysis and visualization
 
----
 
-## Author
 
-This project was developed for scientific research on video object segmentation, focusing on the comparison between:
-
-- **CUTIE**
-- **XMem**
