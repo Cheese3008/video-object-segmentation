@@ -1,4 +1,4 @@
-# Đánh giá những thách thức trong bài toán phân đoạn đối tượng trong video: CUTIE và XMem
+# Đánh giá và so sánh trong bài toán phân đoạn đối tượng trong video: CUTIE và XMem
 
 <p align="center">
   Khung đánh giá so sánh cho bài toán phân đoạn đối tượng trong video sử dụng <b>CUTIE</b> và <b>XMem</b>
