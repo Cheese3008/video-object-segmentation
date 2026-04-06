@@ -1,272 +1,230 @@
-# Evaluating the challenges in object segmentation in the video: CUTIE vs. XMem
+# UAV Real-time Object Tracking System
 
-<p align="center">
-  Comparative evaluation framework for Video Object Segmentation using <b>CUTIE</b> and <b>XMem</b>
-</p>
+Hệ thống theo dõi đối tượng thời gian thực cho UAV dựa trên **ROS2**, tập trung vào bài toán **phát hiện đối tượng, bám mục tiêu và ước lượng vị trí mục tiêu từ dữ liệu camera**.
 
 ---
 
-## Overview
+## 1. Giới thiệu
 
-This project supports a research study on:
+Dự án này được xây dựng nhằm phục vụ các bài toán perception cho UAV, trong đó hệ thống sử dụng camera để phát hiện đối tượng, theo dõi mục tiêu theo thời gian thực và ước lượng vị trí mục tiêu để cung cấp cho các module điều khiển phía sau.
 
-**Applying Deep Learning to the Video Object Segmentation Task**
+Pipeline chính của hệ thống như sau:
 
-The main objective is to evaluate and compare two state-of-the-art video object segmentation models:
+**Camera → YOLOv8 Detection → ByteTrack Tracking → Target Pose Estimation → ROS2 Topics → Các module UAV phía sau**
 
-- **CUTIE**
-- **XMem**
-
-The project includes:
-- inference result management
-- multiple evaluation metrics
-- qualitative visualization with overlay videos
+Hệ thống được thiết kế theo hướng dễ tích hợp với các thành phần khác như bộ lọc hợp nhất dữ liệu, bộ điều khiển gimbal, PX4 ROS2 Interface hoặc các node điều khiển bay.
 
 ---
 
-## Project Structure
+## 2. Chức năng chính
+
+- Phát hiện đối tượng thời gian thực bằng **YOLOv8**
+- Theo dõi mục tiêu qua nhiều khung hình bằng **ByteTrack**
+- Hỗ trợ chọn mục tiêu bằng **click chuột** hoặc **ROI**
+- Ước lượng vị trí mục tiêu từ ảnh camera
+- Hỗ trợ ước lượng khoảng cách dựa trên kích thước **bounding box**
+- Publish dữ liệu mục tiêu qua **ROS2 topics**
+- Publish ảnh debug để quan sát kết quả tracking
+- Hỗ trợ tích hợp với các module UAV khác trong hệ thống
+- Hỗ trợ hiển thị và giám sát qua giao diện web
+
+---
+
+## 3. Cấu trúc thư mục
 
 ```bash
-.
-├── assets/
-│   ├── Efficiency/
-│   ├── Object Persistence/
-│   ├── Results/
-│   ├── Shape Quality/
-│   └── Temporal Stability/
-│
-├── data/
-│   ├── Annotations/
-│   └── JPEGImages/
-│
-├── evaluation/
-│   ├── efficiency.py
-│   ├── object_persistence.py
-│   ├── shape_quality.py
-│   ├── temporal_stability.py
-│   └── video_demo.py
-│
-├── experiments/
-│   ├── results_cutie/
-│   └── results_xmem/
-│
-├── model/
-│   ├── Cutie/
-│   └── XMem/
-│
-└── scripts/
-    ├── prepare_dataset.sh
-    ├── run_cutie.sh
-    └── run_xmem.sh
+UAV-Real-time-Object-Tracking-System/
+├── README.md
+└── follow/
+    ├── object_lock_tracker_node.py
+    ├── models/
+    ├── src/
+    │   ├── ai_follow/
+    │   ├── gimbal_controller/
+    │   ├── px4-ros2-interface-lib/
+    │   ├── px4_msgs/
+    │   ├── rtsp_camera/
+    │   ├── target_pose_fusion/
+    │   ├── utils/
+    │   └── vision_opencv/
+    ├── camear_calibration/
+    ├── deploy/
+    ├── services/
+    ├── web/
+    │   ├── backend/
+    │   └── frontend/
+    ├── web_env/
+    ├── Makefile
+    ├── install_opencv.sh
+    ├── install_opencv_4_10_pi5.sh
+    └── setup_web.sh
 ```
 
 ---
 
-## Directory Description
+## 4. Các module chính
 
-### `assets/`
-Stores output resources used for visualization, reporting, and presentation.
+### 4.1. Object Lock Tracker Node
 
-Subfolders:
-- `Efficiency/` — efficiency evaluation figures and results
-- `Object Persistence/` — object persistence evaluation results
-- `Results/` — general outputs and final visualizations
-- `Shape Quality/` — mask shape quality evaluation results
-- `Temporal Stability/` — temporal stability evaluation results
-
----
-
-### `data/`
-Contains the dataset used for evaluation.
-
-- `JPEGImages/` — RGB frames for each sequence
-- `Annotations/` — ground-truth segmentation masks
-
-Example:
-```bash
-data/
-├── Annotations/
-│   ├── 0ql59q5s/
-│   ├── 1wjebgyd/
-│   └── 3v2kgn6k/
-└── JPEGImages/
-    ├── 0ql59q5s/
-    ├── 1wjebgyd/
-    └── 3v2kgn6k/
-```
-
----
-
-### `evaluation/`
-Contains scripts for metric computation and qualitative comparison.
-
-- `efficiency.py` — evaluates runtime performance of CUTIE and XMem
-- `object_persistence.py` — evaluates how well the object is preserved across frames
-- `shape_quality.py` — evaluates the predicted mask quality
-- `temporal_stability.py` — evaluates segmentation consistency over time
-- `video_demo.py` — generates overlay comparison videos between CUTIE and XMem
-
----
-
-### `experiments/`
-Contains inference outputs from each model.
-
-- `results_cutie/` — predicted masks from CUTIE
-- `results_xmem/` — predicted masks from XMem
-
-Example:
-```bash
-experiments/
-├── results_cutie/
-│   ├── 0ql59q5s/
-│   ├── 1wjebgyd/
-│   └── 3v2kgn6k/
-└── results_xmem/
-    ├── 0ql59q5s/
-    ├── 1wjebgyd/
-    └── 3v2kgn6k/
-```
-
----
-
-### `model/`
-Contains the source code or local model folders for the two VOS methods.
-
-- `Cutie/`
-- `XMem/`
-
-This directory is used for:
-- inference execution
-- checkpoint organization
-- reference to the original model implementations
-
----
-
-### `scripts/`
-Contains shell scripts for running the full workflow.
-
-- `prepare_dataset.sh` — dataset preparation
-- `run_cutie.sh` — runs inference using CUTIE
-- `run_xmem.sh` — runs inference using XMem
-
----
-
-## Workflow
-
-### 1. Prepare the dataset
-Place the dataset into the following structure:
+File chính của khối xử lý ảnh là:
 
 ```bash
-data/JPEGImages/<sequence_name>/
-data/Annotations/<sequence_name>/
+object_lock_tracker_node.py
 ```
 
-Then run:
+Đây là node trung tâm của hệ thống perception, đảm nhiệm việc nhận ảnh từ camera, phát hiện đối tượng, theo dõi mục tiêu và publish kết quả cho các node khác.
 
-```bash
-bash scripts/prepare_dataset.sh
-```
+#### Chức năng
+
+- Subscribe ảnh camera và thông tin camera
+- Chạy YOLOv8 để phát hiện đối tượng
+- Sử dụng ByteTrack để theo dõi mục tiêu
+- Hỗ trợ chọn mục tiêu bằng click chuột hoặc vùng chọn ROI
+- Publish pose mục tiêu
+- Publish ảnh debug
+- Gửi tín hiệu reset và trạng thái tracking cho các node khác
+
+#### Topic đầu vào
+
+- `/camera/image_raw`
+- `/camera/camera_info`
+- `/click_point`
+- `/select_bbox`
+
+#### Topic đầu ra
+
+- `/detecd_pose`
+- `/image_proc`
+- `/reset`
+- `/tag_state`
+
+#### Một số tham số cấu hình chính
+
+- `model_path`
+- `conf_thres`
+- `z_mode`
+- `target_real_height_m`
+- `target_class_id`
+- `enable_gui`
+- `publish_debug_image`
 
 ---
 
-### 2. Run CUTIE inference
+### 4.2. Target Pose Fusion
 
-```bash
-bash scripts/run_cutie.sh
-```
+Package `target_pose_fusion` dùng để hợp nhất và làm mượt dữ liệu vị trí mục tiêu nhằm giảm nhiễu từ kết quả thị giác.
 
-Outputs will be saved to:
-
-```bash
-experiments/results_cutie/
-```
+Thành phần này đặc biệt hữu ích khi dữ liệu từ camera cần được cung cấp cho các bộ điều khiển phía sau một cách ổn định hơn, chẳng hạn như gimbal controller hoặc bộ điều khiển bay.
 
 ---
 
-### 3. Run XMem inference
+### 4.3. AI Follow Package
 
-```bash
-bash scripts/run_xmem.sh
-```
+Package `ai_follow` chứa cấu trúc ROS2 package cho hệ thống perception bám mục tiêu, bao gồm:
 
-Outputs will be saved to:
-
-```bash
-experiments/results_xmem/
-```
+- cấu hình package
+- metadata
+- phần tích hợp trong workspace ROS2
+- các thành phần hỗ trợ perception và tracking
 
 ---
 
-### 4. Run evaluations
+### 4.4. Web Monitoring
 
-```bash
-python evaluation/efficiency.py
-python evaluation/object_persistence.py
-python evaluation/shape_quality.py
-python evaluation/temporal_stability.py
-```
+Thư mục `web/` bao gồm:
 
----
+- `backend/` với các file như `app.py`, `ros_bridge.py`
+- `frontend/` với file giao diện `index.html`
 
-### 5. Generate qualitative comparison video
-
-```bash
-python evaluation/video_demo.py
-```
-
-Generated videos and visual outputs are typically saved in:
-
-```bash
-assets/Results/
-```
+Thành phần này phục vụ cho việc theo dõi hình ảnh đã xử lý hoặc hiển thị luồng camera thông qua giao diện web.
 
 ---
 
-## Evaluation Categories
+### 4.5. Deploy và tiện ích
 
-### 1. Efficiency
-Measures runtime-related performance:
-- per-frame processing time
-- average latency
-- average FPS
-- latency stability comparison between CUTIE and XMem
+Dự án cũng bao gồm:
 
-### 2. Object Persistence
-Measures how well the segmented object is maintained throughout the video:
-- object continuity
-- object preservation over time
-- robustness against losing the target
-
-### 3. Shape Quality
-Measures the quality of predicted segmentation masks:
-- completeness of the object region
-- boundary quality
-- similarity to the ground truth mask
-
-### 4. Temporal Stability
-Measures consistency between consecutive frames:
-- reduced flickering
-- reduced mask jitter
-- stable segmentation over time
+- các script triển khai trong `deploy/`
+- các file cấu hình service trong `services/`
+- các script cài đặt OpenCV cho Linux và Raspberry Pi 5
+- `Makefile` để build workspace ROS2
+- các tiện ích phục vụ thiết lập môi trường web
 
 ---
 
-## Example Sequences
+## 5. Công nghệ sử dụng
 
-Several representative sequences used in evaluation:
+Các công nghệ chính được sử dụng trong dự án:
 
-- `0ql59q5s`
-- `1wjebgyd`
-- `3v2kgn6k`
+- **Python**
+- **ROS2**
+- **YOLOv8**
+- **ByteTrack**
+- **OpenCV**
+- **Ultralytics**
+- **Supervision**
+- **C++**
+- **PX4 ROS2 Interface**
+- **Kalman Filter**
 
 ---
 
-## Future Work
+## 6. Nguyên lý hoạt động
 
-Possible extensions for this project:
-- Investigating the replacement of the Transformer architecture in CUTIE with Mamba (State Space Model - SSM) to evaluate its potential for improving performance and reducing computational cost
-- Optimizing the model and processing pipeline to achieve real-time inference, thereby enhancing its practicality for real-world applications
+Hệ thống hoạt động theo các bước chính sau:
 
+1. Camera publish dữ liệu ảnh lên ROS2.
+2. Node `object_lock_tracker_node.py` nhận luồng ảnh từ camera.
+3. YOLOv8 thực hiện phát hiện đối tượng trong ảnh.
+4. ByteTrack duy trì ID và theo dõi mục tiêu qua nhiều frame.
+5. Hệ thống xác định mục tiêu cần bám và tiến hành ước lượng vị trí mục tiêu.
+6. Node publish các dữ liệu cần thiết, bao gồm:
+   - pose mục tiêu
+   - ảnh debug
+   - trạng thái tracking
+   - tín hiệu reset
+7. Các module phía sau như fusion, gimbal hoặc flight controller sẽ subscribe các topic này để xử lý tiếp.
+
+---
+
+## 7. Giao tiếp ROS2
+
+### 7.1. Topic subscribe
+
+- `/camera/image_raw`
+- `/camera/camera_info`
+- `/click_point`
+- `/select_bbox`
+
+### 7.2. Topic publish
+
+- `/detecd_pose`
+- `/image_proc`
+- `/reset`
+- `/tag_state`
+
+---
+
+## 8. Mục đích tích hợp trong hệ thống UAV
+
+Hệ thống tracking này có thể được sử dụng như một khối perception đầu vào cho nhiều bài toán UAV khác nhau, ví dụ:
+
+- UAV bám theo người hoặc phương tiện
+- UAV giám sát mục tiêu theo thời gian thực
+- UAV phục vụ tìm kiếm cứu nạn
+- UAV hỗ trợ điều khiển gimbal bám mục tiêu
+- UAV cung cấp dữ liệu mục tiêu cho bộ điều khiển hạ cánh chính xác hoặc điều khiển tự động
+
+---
+
+## 9. Hướng phát triển
+
+Một số hướng phát triển trong tương lai:
+
+- Tăng độ ổn định khi track lại mục tiêu sau khi bị mất
+- Cải thiện độ chính xác của ước lượng vị trí mục tiêu
+
+---
 
 
 
